@@ -1,0 +1,2 @@
+# JavaFXSceneBuilderLauncher
+为sceneBuilder8.0以上的版本增加fxml文件的拖拽启动功能
