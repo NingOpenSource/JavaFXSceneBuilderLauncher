@@ -5,25 +5,26 @@
  */
 package org.ning.javafx.scenebuilder.app.ui;
 
-import java.io.BufferedOutputStream;
-import java.io.BufferedWriter;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
+import java.io.InputStream;
 import java.net.URL;
-import java.nio.Buffer;
+import java.util.List;
 import java.util.ResourceBundle;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.scene.input.DragEvent;
+import javafx.scene.input.Dragboard;
+import javafx.scene.input.TransferMode;
+import javafx.stage.FileChooser;
+import javafx.stage.Stage;
 
 /**
  * FXML Controller class
  *
- * @author Administrator
+ * @author ning
  */
 public class MainContentController implements Initializable {
 
@@ -42,9 +43,37 @@ public class MainContentController implements Initializable {
     }
 
     @FXML
+    public void onDragOver(DragEvent actionEvent) {
+        actionEvent.acceptTransferModes(TransferMode.ANY);
+    }
+
+    @FXML
+    public void onDragDropped(DragEvent actionEvent) {
+        Dragboard dragboard = actionEvent.getDragboard();
+        for (File file : dragboard.getFiles()) {
+            System.out.println(file.getName());
+            if (!file.getName().contains(".fxml")) {
+                continue;
+            }
+            openJar(file.getAbsolutePath());
+        }
+    }
+
+    @FXML
     public void selectFileAndLaunch(ActionEvent actionEvent) {
         System.err.println("selectFileAndLaunch");
-        openJar(null);
+        FileChooser chooser = new FileChooser();
+        chooser.setTitle(java.util.ResourceBundle.getBundle("org/ning/javafx/scenebuilder/app/Bundle").getString("fxmlChooserTitle"));
+//        chooser.setSelectedExtensionFilter(new FileChooser.ExtensionFilter("a javaFX gui xml document file.", "fxml"));
+        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter(java.util.ResourceBundle.getBundle("org/ning/javafx/scenebuilder/app/Bundle").getString("fxmlDesc"), "*.fxml"));
+        List<File> files = chooser.showOpenMultipleDialog(new Stage());
+        for (File file : files) {
+            System.out.println(file.getName());
+            if (!file.getName().contains(".fxml")) {
+                continue;
+            }
+            openJar(file.getAbsolutePath());
+        }
     }
 
     /**
@@ -52,33 +81,47 @@ public class MainContentController implements Initializable {
      * @param fxmlFile
      */
     private void openJar(String fxmlFile) {
-        for (String jarPath : new File("lib").list()) {
-            System.out.println(jarPath);
+        for (File jar : new File("lib").listFiles()) {
+            System.out.println(jar.getAbsoluteFile());
             String args = (fxmlFile == null) ? "" : (" " + fxmlFile);
             new Thread() {
                 @Override
                 public void run() {
                     super.run(); //To change body of generated methods, choose Tools | Templates.
-                    try {
-                        String temp = "";
-                        {
-                            OutputStreamWriter os = new OutputStreamWriter(Runtime.getRuntime().exec("ipconfig").getOutputStream());
-                            BufferedWriter bufferedWriter = new BufferedWriter(os);
-                            bufferedWriter.write(temp);
-                        }
-                        System.out.println(temp);
-                        {
-                            OutputStreamWriter os = new OutputStreamWriter(Runtime.getRuntime().exec("java -jar " + jarPath + args).getOutputStream());
-                            BufferedWriter bufferedWriter = new BufferedWriter(os);
-                            bufferedWriter.write(temp);
-                        }
-                        System.out.println(temp);
-                    } catch (IOException ex) {
-                        Logger.getLogger(MainContentController.class.getName()).log(Level.SEVERE, null, ex);
+                    String temp = "";
+                    {
+                        temp = process("java -jar " + jar.getAbsolutePath() + args);
                     }
+                    System.out.println(temp);
                 }
 
             }.start();
+            return;
         }
+    }
+
+    private String process(String cmd) {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try {
+            Process p = Runtime.getRuntime().exec(cmd);
+            InputStream inputStream = p.getInputStream();
+            int i = -1;
+            while ((i = inputStream.read()) != -1) {
+                baos.write(i);
+            }
+            inputStream.close();
+            return baos.toString();
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } finally {
+            try {
+                baos.close();
+            } catch (IOException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+        }
+        return null;
     }
 }
