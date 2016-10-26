@@ -1,0 +1,2 @@
+D:\workspace\NetBeansProjects\JavaFXSceneBuilderLauncher\lib\os\windows\nircmd-x64\nircmd.exe elevate assoc .fxml=FxmlDocument
+ftype FxmlDocument=C:\Program Files\Java\jdk1.8.0_102\jre\bin\java.exe -jar D:\workspace\NetBeansProjects\JavaFXSceneBuilderLauncher\lib\os %0

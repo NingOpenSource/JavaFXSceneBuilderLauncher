@@ -5,22 +5,31 @@
  */
 package org.ning.javafx.scenebuilder.app.ui;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
-import java.io.InputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.List;
 import java.util.ResourceBundle;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javafx.application.Platform;
 import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.scene.control.Alert;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.DialogEvent;
 import javafx.scene.input.DragEvent;
 import javafx.scene.input.Dragboard;
 import javafx.scene.input.TransferMode;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import jodd.io.NetUtil;
+import org.ning.javafx.scenebuilder.app.utils.OSUtils;
 
 /**
  * FXML Controller class
@@ -35,6 +44,19 @@ public class MainContentController implements Initializable {
     @Override
     public void initialize(URL url, ResourceBundle rb) {
         // TODO
+        Platform.runLater(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    LoadAnim anim=new LoadAnim();
+                    Stage s=new Stage();
+                    s.setAlwaysOnTop(true);
+                    anim.start(s);
+                } catch (Exception ex) {
+                    Logger.getLogger(OSUtils.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+        });
     }
 
     @FXML
@@ -82,94 +104,119 @@ public class MainContentController implements Initializable {
      * @param fxmlFile
      */
     private void openJar(String fxmlFile) {
-            File jar=findJar();
-            System.out.println(jar.getAbsoluteFile());
-            String args = (fxmlFile == null) ? "" : (" " + fxmlFile);
-            new Thread() {
-                @Override
-                public void run() {
-                    super.run(); //To change body of generated methods, choose Tools | Templates.
-                    String temp = "";
-                    {
-                        temp = process("java -jar " + jar.getAbsolutePath() + args);
-                    }
-                    System.out.println(temp);
+        File jar = findJar();
+        System.out.println(jar.getAbsoluteFile());
+        String args = (fxmlFile == null) ? "" : (" " + fxmlFile);
+        new Thread() {
+            @Override
+            public void run() {
+                super.run(); //To change body of generated methods, choose Tools | Templates.
+                String temp = "";
+                {
+                    temp = new OSUtils().process("java -jar " + jar.getAbsolutePath() + args);
                 }
+                System.out.println(temp);
+            }
 
-            }.start();
+        }.start();
     }
-private File findJar(){
-    for (File jar : new File("lib").listFiles(new FilenameFilter() {
+
+    /**
+     * 寻找jar包
+     *
+     * @return
+     */
+    private File findJar() {
+        File file=new File("lib/runJar");
+        File temp=new File(file,"sceneBuilder.jar");
+        if(temp.exists()){
+            return temp;
+        }
+        for (File jar : file.listFiles(new FilenameFilter() {
             @Override
             public boolean accept(File dir, String name) {
-                if(name.contains("jodd")){
+                if (!name.contains(".jar")) {
+                    return false;
+                }
+                if (name.contains("jodd")) {
+                    return false;
+                }
+                if (name.contains(".bat")) {
                     return false;
                 }
                 return true;
             }
         })) {
-        return jar;
-    }
-    return null;
-};
-    private String process(String cmd) {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        try {
-            Process p = Runtime.getRuntime().exec(cmd);
-            InputStream inputStream = p.getInputStream();
-            int i = -1;
-            while ((i = inputStream.read()) != -1) {
-                baos.write(i);
-            }
-            inputStream.close();
-            return baos.toString();
-        } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        } finally {
-            try {
-                baos.close();
-            } catch (IOException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
+            return jar;
         }
         return null;
     }
-    /**
-     * 用管理员权限执行
-     * @param cmd
-     * @return 
-     */
-    private String processAdminOnWindows(String cmd) {
-        return process("cmd /C runAs /user:administrator "+cmd);
+    @FXML
+    public void aboutThisProject(){
+        try {  
+            java.awt.Desktop.getDesktop().browse(new URI("https://github.com/NingOpenSource/JavaFXSceneBuilderLauncher"));
+        } catch (URISyntaxException ex) {
+            Logger.getLogger(MainContentController.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (IOException ex) {
+            Logger.getLogger(MainContentController.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
     /**
-     * 用管理员权限执行
-     * @param cmd
-     * @return 
+     *更新SceneBuilder
+     * @param actionEvent
      */
-    private String processAdminOnLinux(String cmd) {
-        return process("cmd /C runAs /user:administrator "+cmd);
+    @FXML
+    public void updateSceneBuilder(ActionEvent actionEvent) {
+        try {
+            File file=new File("lib/runJar","sceneBuilder.jar");
+            if (file.exists()) {
+                file.delete();
+            }
+            
+            NetUtil.downloadFile("http://gluonhq.com/download/scene-builder-jar/", file);
+            
+        } catch (IOException ex) {
+            Logger.getLogger(MainContentController.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
-    /**
-     * 用管理员权限执行
-     * @param cmd
-     * @return 
-     */
-    private String processAdminOnMac(String cmd) {
-        return process("cmd /C runAs /user:administrator "+cmd);
-    }
+
     /**
      * 关联fxml文件
      */
     @FXML
-    public void associateFxmlDocument(ActionEvent actionEvent){
-        String osName=System.getProperty("os.name").toLowerCase();
-        if(osName.contains("windows")){
-            System.out.println("this is windows");
-            System.out.println("org.ning.javafx.scenebuilder.app.ui.MainContentController.associateFxmlDocument()\n"+processAdminOnWindows("assoc .fxml=FxmlDocument"));
-            processAdminOnWindows("ftype FxmlDocument=\"java -jar "+findJar().getAbsolutePath()+"\" %*");
-        }
+    public void associateFxmlDocument(ActionEvent actionEvent) {
+        new Thread() {
+            @Override
+            public void run() {
+                super.run(); //To change body of generated methods, choose Tools | Templates.
+                String osName = System.getProperty("os.name").toLowerCase();
+                if (osName.contains("windows")) {
+                    String cmd1 = "assoc .fxml=FxmlDocument";
+                    ;
+                    String cmd2 = "ftype FxmlDocument="
+                            + System.getProperty("java.home") + File.separator + "bin" + File.separator + "java.exe -jar " + findJar().getAbsolutePath() + " %0" //                                + "\"java -jar " + findJar().getAbsolutePath() + "\" %1"
+                            ;
+                    OSUtils oSUtils = new OSUtils();
+                    oSUtils.processAdminOnWindows(cmd1);
+                    oSUtils.processAdminOnWindows(cmd2);
+                    Platform.runLater(new Runnable() {
+                        @Override
+                        public void run() {
+                            Alert alert = new Alert(Alert.AlertType.INFORMATION, java.util.ResourceBundle.getBundle("org/ning/javafx/scenebuilder/app/Bundle").getString("associateFxmlDocumentAlertTitle"), ButtonType.OK);
+                            alert.setOnCloseRequest(new EventHandler<DialogEvent>() {
+                                @Override
+                                public void handle(DialogEvent event) {
+
+                                }
+
+                            });
+                            alert.show();
+                        }
+                    });
+                }
+            }
+
+        }.start();
+
     }
 }

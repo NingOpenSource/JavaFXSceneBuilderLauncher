@@ -21,10 +21,10 @@ public class Launcher extends Application {
     
     @Override
     public void start(Stage primaryStage) throws IOException {
-        primaryStage.setAlwaysOnTop(true);
+//        primaryStage.setAlwaysOnTop(true);
         Pane root=FXMLLoader.load(getClass().getResource("ui/mainContent.fxml"));
         primaryStage.getIcons().add(new Image(getClass().getResource("fxml-16.png").toString()));
-        Scene scene = new Scene(root, 400, 300);
+        Scene scene = new Scene(root, -1, -1);
         primaryStage.setResizable(false);
         primaryStage.setTitle(java.util.ResourceBundle.getBundle("org/ning/javafx/scenebuilder/app/Bundle").getString("appTitle"));
         primaryStage.setScene(scene);
