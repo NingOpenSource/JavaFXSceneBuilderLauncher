@@ -7,6 +7,7 @@ package org.ning.javafx.scenebuilder.app.ui;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
@@ -81,7 +82,7 @@ public class MainContentController implements Initializable {
      * @param fxmlFile
      */
     private void openJar(String fxmlFile) {
-        for (File jar : new File("lib").listFiles()) {
+            File jar=findJar();
             System.out.println(jar.getAbsoluteFile());
             String args = (fxmlFile == null) ? "" : (" " + fxmlFile);
             new Thread() {
@@ -96,10 +97,21 @@ public class MainContentController implements Initializable {
                 }
 
             }.start();
-            return;
-        }
     }
-
+private File findJar(){
+    for (File jar : new File("lib").listFiles(new FilenameFilter() {
+            @Override
+            public boolean accept(File dir, String name) {
+                if(name.contains("jodd")){
+                    return false;
+                }
+                return true;
+            }
+        })) {
+        return jar;
+    }
+    return null;
+};
     private String process(String cmd) {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try {
@@ -123,5 +135,41 @@ public class MainContentController implements Initializable {
             }
         }
         return null;
+    }
+    /**
+     * 用管理员权限执行
+     * @param cmd
+     * @return 
+     */
+    private String processAdminOnWindows(String cmd) {
+        return process("cmd /C runAs /user:administrator "+cmd);
+    }
+    /**
+     * 用管理员权限执行
+     * @param cmd
+     * @return 
+     */
+    private String processAdminOnLinux(String cmd) {
+        return process("cmd /C runAs /user:administrator "+cmd);
+    }
+    /**
+     * 用管理员权限执行
+     * @param cmd
+     * @return 
+     */
+    private String processAdminOnMac(String cmd) {
+        return process("cmd /C runAs /user:administrator "+cmd);
+    }
+    /**
+     * 关联fxml文件
+     */
+    @FXML
+    public void associateFxmlDocument(ActionEvent actionEvent){
+        String osName=System.getProperty("os.name").toLowerCase();
+        if(osName.contains("windows")){
+            System.out.println("this is windows");
+            System.out.println("org.ning.javafx.scenebuilder.app.ui.MainContentController.associateFxmlDocument()\n"+processAdminOnWindows("assoc .fxml=FxmlDocument"));
+            processAdminOnWindows("ftype FxmlDocument=\"java -jar "+findJar().getAbsolutePath()+"\" %*");
+        }
     }
 }
