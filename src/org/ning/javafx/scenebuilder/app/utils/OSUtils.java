@@ -9,11 +9,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import javafx.application.Platform;
-import javafx.stage.Stage;
-import org.ning.javafx.scenebuilder.app.ui.LoadAnim;
 
 /**
  *
@@ -22,7 +17,7 @@ import org.ning.javafx.scenebuilder.app.ui.LoadAnim;
 public class OSUtils {
 
     public OSUtils() {
-        System.err.println("" + System.getProperty("os.arch"));
+//        System.err.println("" + System.getProperty("os.arch"));
     }
 
     /**
